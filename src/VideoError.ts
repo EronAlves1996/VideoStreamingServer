@@ -1,4 +1,4 @@
-class WebVideoError extends Error {
+export class WebVideoError extends Error {
   statusCode: number;
   message: string;
 

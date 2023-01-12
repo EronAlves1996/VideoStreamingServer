@@ -3,9 +3,10 @@ import { Context, Middleware } from "koa";
 import Router from "koa-router";
 import send from "koa-send";
 import path from "path";
-import { getContext } from "./getContext";
+import { getContext } from "./getContext.js";
 import { Length, Snippet } from "./types";
-import { processVideoService } from "./video";
+import { processVideoService } from "./video.js";
+import { WebVideoError } from "./VideoError.js";
 
 const router = new Router();
 
@@ -29,7 +30,7 @@ router.get("/api/video/:name", async (ctx: Context, next: Middleware) => {
       range as string
     );
     setVideoHeaders(response, snippet, length);
-    sendVideo(response, stream, name);
+    sendVideo(response, name, stream);
   } catch (err) {
     if (err instanceof WebVideoError) {
       const error = err as WebVideoError;
@@ -37,6 +38,7 @@ router.get("/api/video/:name", async (ctx: Context, next: Middleware) => {
     }
     if (err instanceof Error) {
       const error = err as Error;
+      console.log(error);
       ctx.throw(error.message);
     }
   }
@@ -46,7 +48,7 @@ export function sendVideo(
   response: import("/home/eronads/repos/streamingDenoJs/node_modules/@types/koa/index").Response & {
     body: unknown;
   },
-  name: any,
+  name: string,
   stream: ReadStream
 ) {
   response.status = 206;

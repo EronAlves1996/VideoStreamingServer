@@ -1,6 +1,7 @@
 import { access, createReadStream, ReadStream, stat } from "fs";
 import path from "path";
 import { promisify } from "util";
+import { WebVideoError } from "./VideoError.js";
 
 function throwError(error: any) {
   if (error.code === "ENOENT") {
