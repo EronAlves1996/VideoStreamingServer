@@ -1,9 +1,11 @@
-import { access, createReadStream, stat } from "fs";
+import { ReadStream } from "fs";
 import { Context, Middleware } from "koa";
 import Router from "koa-router";
 import send from "koa-send";
 import path from "path";
-import { promisify } from "util";
+import { getContext } from "./getContext";
+import { Length, Snippet } from "./types";
+import { processVideoService } from "./video";
 
 const router = new Router();
 
@@ -16,49 +18,51 @@ router.get("/", async (ctx: Context) => {
 });
 
 router.get("/api/video/:name", async (ctx: Context, next: Middleware) => {
-  const { name } = ctx.params;
-  const { request, response } = ctx;
-  const { range } = request.headers;
+  const { name, response, headers } = getContext(ctx);
+  const { range } = headers;
 
   if (!/^[a-z0-9-_ ]+\.mp4$/i.test(name)) return next();
-  if (!range) ctx.throw(400, "Range not provided");
 
-  const videoPath = path.resolve(__dirname, "videos", name);
   try {
-    await promisify(access)(videoPath);
+    const { length, snippet, stream } = await processVideoService(
+      name,
+      range as string
+    );
+    setVideoHeaders(response, snippet, length);
+    sendVideo(response, stream, name);
   } catch (err) {
-    const error = err as any;
-    if (error.code === "ENOENT") {
-      ctx.throw(404);
-    } else {
-      ctx.throw(error.toString());
+    if (err instanceof WebVideoError) {
+      const error = err as WebVideoError;
+      ctx.throw(error.statusCode, error.message);
+    }
+    if (err instanceof Error) {
+      const error = err as Error;
+      ctx.throw(error.message);
     }
   }
+});
 
-  const parts = range.replace("bytes=", "").split("-");
-  const rangeStart = parts[0] && parts[0].trim();
-  const start = rangeStart ? parseInt(rangeStart, 10) : 0;
-
-  const videoStat = await promisify(stat)(videoPath);
-  const videoSize = videoStat.size;
-  const chunkSize = 10 ** 6;
-
-  const rangeEnd = parts[1] && parts[1].trim();
-  const __rangeEnd = rangeEnd ? parseInt(rangeEnd, 10) : undefined;
-  const end =
-    __rangeEnd === 1 ? __rangeEnd : Math.min(start + chunkSize, videoSize) - 1;
-  const contentLength = end - start + 1;
-
-  response.set("Content-Range", `bytes ${start}-${end}/${videoSize}`);
-  response.set("Accept-Ranges", "bytes");
-  response.set("Content-Length", contentLength.toString());
-
-  const stream = createReadStream(videoPath, { start, end });
-  stream.on("error", (err) => console.log(err.toString()));
-
+export function sendVideo(
+  response: import("/home/eronads/repos/streamingDenoJs/node_modules/@types/koa/index").Response & {
+    body: unknown;
+  },
+  name: any,
+  stream: ReadStream
+) {
   response.status = 206;
   response.type = path.extname(name);
   response.body = stream;
-});
+}
 
 export default router;
+function setVideoHeaders(
+  response: import("/home/eronads/repos/streamingDenoJs/node_modules/@types/koa/index").Response & {
+    body: unknown;
+  },
+  { start, end }: Snippet,
+  { videoSize, contentLength }: Length
+) {
+  response.set("Content-Range", `bytes ${start}-${end}/${videoSize}`);
+  response.set("Accept-Ranges", "bytes");
+  response.set("Content-Length", contentLength.toString());
+}
