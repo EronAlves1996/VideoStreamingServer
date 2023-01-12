@@ -1,5 +1,5 @@
 import Koa from "koa";
-import router from "./router";
+import router from "./router.js";
 
 const PORT = parseInt(process.env.PORT!, 10) || 3000;
 const app = new Koa();
