@@ -32,15 +32,7 @@ router.get("/api/video/:name", async (ctx: Context, next: Middleware) => {
     setVideoHeaders(response, snippet, length);
     sendVideo(response, name, stream);
   } catch (err) {
-    if (err instanceof WebVideoError) {
-      const error = err as WebVideoError;
-      ctx.throw(error.statusCode, error.message);
-    }
-    if (err instanceof Error) {
-      const error = err as Error;
-      console.log(error);
-      ctx.throw(error.message);
-    }
+    throwErrorOnContext(err, ctx);
   }
 });
 
@@ -56,7 +48,6 @@ export function sendVideo(
   response.body = stream;
 }
 
-export default router;
 function setVideoHeaders(
   response: import("/home/eronads/repos/streamingDenoJs/node_modules/@types/koa/index").Response & {
     body: unknown;
@@ -68,3 +59,17 @@ function setVideoHeaders(
   response.set("Accept-Ranges", "bytes");
   response.set("Content-Length", contentLength.toString());
 }
+
+function throwErrorOnContext(err: unknown, ctx: Context) {
+  if (err instanceof WebVideoError) {
+    const error = err as WebVideoError;
+    ctx.throw(error.statusCode, error.message);
+  }
+  if (err instanceof Error) {
+    const error = err as Error;
+    console.log(error);
+    ctx.throw(error.message);
+  }
+}
+
+export default router;
