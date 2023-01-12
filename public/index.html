@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Streaming</title>
+  <style>
+    body {
+      background-color: #000000;
+    }
+    video {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      max-height: 100%;
+      max-width: 100%;
+      margin: auto;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <video 
+    src="http://localhost:3000/api/video/video.mp4"
+    playsInline
+    muted
+    autoplay
+    controls 
+    controlsList="nodownload"
+  >
+  </video>
+</body>
+</html>
