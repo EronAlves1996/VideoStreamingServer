@@ -1,4 +1,4 @@
-import { access, createReadStream, ReadStream, stat } from "fs";
+import { access, createReadStream, stat } from "fs";
 import path from "path";
 import { promisify } from "util";
 import { WebVideoError } from "./VideoError.js";
